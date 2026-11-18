@@ -53,6 +53,9 @@ jobs:
           $manageResult = @('3', 'yes', '0') | & $command 2>&1 | Out-String
           if ($LASTEXITCODE -ne 0 -or $manageResult -notmatch 'Автозапуск включён') { throw "Management command failed: $manageResult" }
           $removeResult = @('4', 'yes') | & $command 2>&1 | Out-String
+          for ($i = 0; $i -lt 32 -and ((Test-Path $app) -or (Test-Path $command)); $i++) {
+            Start-Sleep -Milliseconds 250
+          }
           $exitCode = $LASTEXITCODE
           $appRemains = Test-Path $app
           $commandRemains = Test-Path $command

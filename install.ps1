@@ -80,14 +80,8 @@ function Install-Command {
     New-Item -ItemType Directory -Path $commandDir -Force | Out-Null
     $launcher = @'
 @echo off
-set "BATTERYDOCK_FROM_COMMAND=1"
 powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File "%LOCALAPPDATA%\BatteryDock\manage.ps1"
-if exist "%LOCALAPPDATA%\BatteryDockCommand\uninstall.pending" (
-  rmdir /s /q "%LOCALAPPDATA%\BatteryDock"
-  cd /d "%TEMP%"
-  rmdir /s /q "%LOCALAPPDATA%\BatteryDockCommand"
-  exit /b 0
-)
+exit /b %ERRORLEVEL%
 '@
     Set-Content -LiteralPath $commandPath -Value $launcher -Encoding ASCII
     Add-CommandPath
@@ -155,18 +149,25 @@ function Uninstall-App {
     Stop-InstalledApp
     Set-Autostart $false
     Remove-CommandPath
-    if ($env:BATTERYDOCK_FROM_COMMAND -eq '1') {
-        New-Item -ItemType File -Path (Join-Path $commandDir 'uninstall.pending') -Force | Out-Null
-        Write-Host 'Удаляю файлы после выхода из меню...'
-    } else {
-        if (Test-Path -LiteralPath $installDir) {
-            Remove-Item -LiteralPath $installDir -Recurse -Force
-        }
-        if (Test-Path -LiteralPath $commandDir) {
-            Remove-Item -LiteralPath $commandDir -Recurse -Force
-        }
-    }
-    Write-Host 'Программа, команда bluetoothdock и автозапуск удалены.'
+    # The launcher is still running. A short-lived helper removes it after this menu exits.
+    $cleanup = Join-Path $env:TEMP ("BatteryDock-cleanup-" + [guid]::NewGuid().ToString('N') + '.ps1')
+    $helper = @'
+Start-Sleep -Seconds 2
+$app = Join-Path $env:LOCALAPPDATA 'BatteryDock'
+$command = Join-Path $env:LOCALAPPDATA 'BatteryDockCommand'
+for ($attempt = 0; $attempt -lt 12; $attempt++) {
+    try {
+        if (Test-Path -LiteralPath $app) { Remove-Item -LiteralPath $app -Recurse -Force -ErrorAction Stop }
+        if (Test-Path -LiteralPath $command) { Remove-Item -LiteralPath $command -Recurse -Force -ErrorAction Stop }
+        break
+    } catch { Start-Sleep -Milliseconds 500 }
+}
+Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue
+'@
+    Set-Content -LiteralPath $cleanup -Value $helper -Encoding UTF8
+    Start-Process powershell.exe -WindowStyle Hidden -ArgumentList @(
+        '-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-File', ('"{0}"' -f $cleanup))
+    Write-Host 'Автозапуск и команда отключены. Файлы удалятся через несколько секунд после закрытия меню.'
 }
 
 Write-Host 'Привет! BatteryDock показывает заряд подключённых Bluetooth-устройств на панели задач.'
