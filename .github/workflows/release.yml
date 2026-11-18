@@ -24,7 +24,7 @@ jobs:
           $errors = $null
           [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path install.ps1), [ref]$tokens, [ref]$errors) | Out-Null
           if ($errors.Count -gt 0) { throw ($errors | Out-String) }
-          $menu = @('4', 'no') | powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File .\install.ps1 2>&1 | Out-String
+          $menu = @('4', 'no', '0') | powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File .\install.ps1 2>&1 | Out-String
           if ($LASTEXITCODE -ne 0 -or $menu -notmatch 'Отменено') { throw "Cancellation check failed: $menu" }
       - name: Create archive and checksum
         shell: pwsh

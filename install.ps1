@@ -166,6 +166,7 @@ Write-Host '3 — Включить/выключить автозапуск'
 Write-Host '4 — Полностью удалить'
 Write-Host '0 — Выход'
 $choice = Read-Host 'Выберите пункт (0-4)'
+if ($null -eq $choice) { Write-Host 'Ввод закрыт.'; return }
 
 try {
     switch ($choice.Trim()) {
