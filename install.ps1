@@ -45,11 +45,24 @@ function Set-Autostart([bool]$enabled) {
     }
 }
 
+function Notify-PathChanged {
+    if (-not ('BatteryDock.EnvironmentSignal' -as [type])) {
+        Add-Type -Namespace BatteryDock -Name EnvironmentSignal -MemberDefinition @'
+[System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+public static extern System.IntPtr SendMessageTimeout(System.IntPtr hWnd, uint message, System.IntPtr wParam, string lParam, uint flags, uint timeout, out System.IntPtr result);
+'@
+    }
+    $result = [IntPtr]::Zero
+    [BatteryDock.EnvironmentSignal]::SendMessageTimeout(
+        [IntPtr]0xffff, 0x1a, [IntPtr]::Zero, 'Environment', 2, 2000, [ref]$result) | Out-Null
+}
+
 function Add-CommandPath {
     $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
     $parts = @($userPath -split ';' | Where-Object { $_ })
     if (@($parts | Where-Object { $_.TrimEnd('\') -ieq $commandDir.TrimEnd('\') }).Count -eq 0) {
         [Environment]::SetEnvironmentVariable('Path', (($parts + $commandDir) -join ';'), 'User')
+        Notify-PathChanged
     }
 }
 
@@ -59,6 +72,7 @@ function Remove-CommandPath {
         $_ -and $_.TrimEnd('\') -ine $commandDir.TrimEnd('\')
     })
     [Environment]::SetEnvironmentVariable('Path', ($parts -join ';'), 'User')
+    Notify-PathChanged
 }
 
 function Install-Command {
