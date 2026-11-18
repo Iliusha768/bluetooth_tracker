@@ -38,6 +38,7 @@ function Is-AutostartEnabled {
 
 function Set-Autostart([bool]$enabled) {
     if ($enabled) {
+        New-Item -Path $runKey -Force | Out-Null
         New-ItemProperty -Path $runKey -Name $runName -PropertyType String `
             -Value ('"{0}"' -f $exePath) -Force | Out-Null
     } else {
