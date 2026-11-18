@@ -84,10 +84,9 @@ set "BATTERYDOCK_FROM_COMMAND=1"
 powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File "%LOCALAPPDATA%\BatteryDock\manage.ps1"
 if exist "%LOCALAPPDATA%\BatteryDockCommand\uninstall.pending" (
   rmdir /s /q "%LOCALAPPDATA%\BatteryDock"
-  del /q "%LOCALAPPDATA%\BatteryDockCommand\uninstall.pending"
   cd /d "%TEMP%"
-  del /q "%~f0"
-  rmdir "%LOCALAPPDATA%\BatteryDockCommand" 2>nul
+  rmdir /s /q "%LOCALAPPDATA%\BatteryDockCommand"
+  exit /b 0
 )
 '@
     Set-Content -LiteralPath $commandPath -Value $launcher -Encoding ASCII

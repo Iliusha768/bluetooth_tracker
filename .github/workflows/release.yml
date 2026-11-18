@@ -53,4 +53,9 @@ jobs:
           $manageResult = @('3', 'yes', '0') | & $command 2>&1 | Out-String
           if ($LASTEXITCODE -ne 0 -or $manageResult -notmatch 'Автозапуск включён') { throw "Management command failed: $manageResult" }
           $removeResult = @('4', 'yes') | & $command 2>&1 | Out-String
-          if ($LASTEXITCODE -ne 0 -or (Test-Path $app) -or (Test-Path $command)) { throw "Removal failed: $removeResult" }
+          $exitCode = $LASTEXITCODE
+          $appRemains = Test-Path $app
+          $commandRemains = Test-Path $command
+          if ($exitCode -ne 0 -or $appRemains -or $commandRemains) {
+            throw "Removal failed (exit=$exitCode, app=$appRemains, command=$commandRemains): $removeResult"
+          }
